@@ -1,6 +1,6 @@
 {
   "name": "biblio-code",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Bibliothèque de fonctionnalités réutilisables : web, appli web, banque, Android, Godot, Unity.",
   "type": "module",
   "exports": {

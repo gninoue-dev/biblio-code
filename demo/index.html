@@ -164,6 +164,17 @@
       <pre><code>regrouperParMois(filtrerTransactions(liste, { type: "debit", recherche })) · exporterCsv(liste)</code></pre>
     </div>
 
+
+    <div class="carte">
+      <h3>Mobile money &amp; montant en lettres</h3>
+      <p class="sous">mobile-money.js · montant-en-lettres.js</p>
+      <label>Numéro de téléphone<input id="mm-numero" value="07 07 12 34 56" inputmode="tel"></label>
+      <div class="resultat" id="mm-sortie"></div>
+      <label>Montant (F CFA)<input id="ml-montant" value="1 280 500" inputmode="numeric"></label>
+      <div class="resultat" id="ml-sortie"></div>
+      <pre><code>operateurCI("07 07 12 34 56") · montantEnLettres(150000, "XOF")</code></pre>
+    </div>
+
     <div class="carte">
       <h3>Déconnexion après inactivité</h3>
       <p class="sous">inactivite.js · modale.js. Version courte : 15 s</p>
@@ -272,6 +283,33 @@ if (await confirmer("Supprimer ?")) …</code></pre>
       <pre><code>paginer(trierPar(rechercher(clients, q, ["nom", "ville"]), champ, sens), page, 8)</code></pre>
     </div>
 
+
+    <div class="carte">
+      <h3>Panier e-commerce</h3>
+      <p class="sous">panier.js · -10 % dès 20 000 F, livraison offerte dès 50 000 F</p>
+      <div id="pa-lignes"></div>
+      <label class="ligne" style="align-items:center"><span>Code promo BIENVENUE10</span><input id="pa-promo" type="checkbox" style="width:auto" checked></label>
+      <div class="resultat" id="pa-total"></div>
+      <pre><code>calculerPanier(lignes, { remise, livraison: 2000, livraisonGratuiteDes: 50000, tauxTva: 18 })</code></pre>
+    </div>
+
+    <div class="carte">
+      <h3>Graphiques sans bibliothèque</h3>
+      <p class="sous">graphiques.js · dépenses du relevé ci-dessus</p>
+      <div class="resultat" id="g-spark"></div>
+      <div id="g-barres"></div>
+      <pre><code>sparkline(valeurs) · barres([{ libelle, valeur }])</code></pre>
+    </div>
+
+    <div class="carte">
+      <h3>Compression d'image</h3>
+      <p class="sous">compression-image.js · choisis une photo lourde</p>
+      <input type="file" id="ci-fichier" accept="image/*">
+      <div class="resultat" id="ci-sortie">Aucune image.</div>
+      <img id="ci-apercu" alt="" style="max-width:100%;border-radius:8px" hidden>
+      <pre><code>await compresserImage(fichier, { largeurMax: 1280, qualite: 0.75 })</code></pre>
+    </div>
+
     <div class="carte">
       <h3>Envoi de fichiers</h3>
       <p class="sous">upload-fichiers.js. Images uniquement, 5 Mo max</p>
@@ -309,6 +347,33 @@ if (await confirmer("Supprimer ?")) …</code></pre>
       <input id="u-texte" value="Été à Abidjan : les <b>meilleurs</b> maquis !">
       <div class="resultat" id="u-texte-sortie"></div>
       <pre><code>slugifier(t) · tronquer(t, 20) · echapperHtml(t)</code></pre>
+    </div>
+
+
+    <div class="carte">
+      <h3>Recherche tolérante aux fautes</h3>
+      <p class="sous">recherche-floue.js · essaie « yamousokro », « bwake », « abijan »</p>
+      <input id="rf-saisie" value="yamousokro">
+      <div class="resultat" id="rf-sortie"></div>
+      <pre><code>suggestions("abijan", villes)</code></pre>
+    </div>
+
+    <div class="carte">
+      <h3>Compte à rebours</h3>
+      <p class="sous">compte-a-rebours.js</p>
+      <button id="cr-bouton">Envoyer le code SMS</button>
+      <pre><code>compteARebours(30_000, { surTic, surFin })</code></pre>
+    </div>
+
+    <div class="carte">
+      <h3>Jours ouvrés &amp; fériés</h3>
+      <p class="sous">jours-ouvres.js · Côte d'Ivoire</p>
+      <div class="ligne">
+        <label>Date d'envoi<input id="jo-date" type="date" value="2026-12-24"></label>
+        <label>Délai (jours ouvrés)<input id="jo-delai" type="number" min="0" max="30" value="2"></label>
+      </div>
+      <div class="resultat" id="jo-sortie"></div>
+      <pre><code>ajouterJoursOuvres("2026-12-24", 2) · joursFeries(2026, "CI")</code></pre>
     </div>
 
     <div class="carte">
@@ -637,6 +702,129 @@ function majDates() {
     exemples.map(([, d]) => B.dateRelative(maintenant + d)).join(" · ");
 }
 majDates();
+
+// ---------- Mobile money & montant en lettres ----------
+function majMobileMoney() {
+  const v = $("#mm-numero").value;
+  const op = B.operateurCI(v);
+  $("#mm-sortie").innerHTML = op
+    ? `${badge(true, op.operateur + (op.type === "fixe" ? " (fixe)" : " Money"), "")} ${B.formaterTelephoneCI(v, { international: true })}<br>Pour l'API de paiement : <code>${B.telephoneInternationalCI(v)}</code>`
+    : badge(false, "", "Numéro ivoirien invalide");
+}
+$("#mm-numero").addEventListener("input", majMobileMoney);
+majMobileMoney();
+function majLettres() {
+  try {
+    const u = B.versUnitesMineures($("#ml-montant").value, "XOF");
+    $("#ml-sortie").innerHTML = `<b>${B.formaterMontant(u, "XOF")}</b><br>« Arrêtée la présente facture à la somme de ${B.montantEnLettres(u, "XOF")}. »`;
+  } catch {
+    $("#ml-sortie").innerHTML = badge(false, "", "Montant invalide");
+  }
+}
+$("#ml-montant").addEventListener("input", majLettres);
+majLettres();
+
+// ---------- Panier ----------
+const catalogue = [
+  { id: "wax", nom: "Pagne wax", prix: 15000 },
+  { id: "sac", nom: "Sac en raphia", prix: 8500 },
+  { id: "bijou", nom: "Bracelet en bronze", prix: 4000 },
+];
+let panier = B.ajouterAuPanier(B.ajouterAuPanier([], catalogue[0]), catalogue[2]);
+function majPanier() {
+  $("#pa-lignes").replaceChildren(...catalogue.map((p) => {
+    const q = panier.find((l) => l.id === p.id)?.quantite ?? 0;
+    const ligne = document.createElement("div");
+    ligne.className = "ligne";
+    ligne.style.alignItems = "center";
+    ligne.innerHTML = `<span style="flex:1 1 auto">${p.nom}<br><small>${fcfa(p.prix)}</small></span>`;
+    for (const [libelle, delta] of [["−", -1], ["+", 1]]) {
+      const b = document.createElement("button");
+      b.className = "second";
+      b.textContent = libelle;
+      b.setAttribute("aria-label", `${delta > 0 ? "Ajouter" : "Retirer"} ${p.nom}`);
+      b.onclick = () => { panier = delta > 0 ? B.ajouterAuPanier(panier, p) : B.modifierQuantite(panier, p.id, q - 1); majPanier(); };
+      if (delta > 0) { const n = document.createElement("b"); n.textContent = q; n.style.flex = "0 0 2ch"; n.style.textAlign = "center"; ligne.append(n); }
+      ligne.append(b);
+    }
+    return ligne;
+  }));
+  const r = B.calculerPanier(panier, {
+    remise: $("#pa-promo").checked ? { type: "pourcentage", valeur: 10, minimum: 20000 } : undefined,
+    livraison: 2000, livraisonGratuiteDes: 50000, tauxTva: 18,
+  });
+  $("#pa-total").innerHTML = `${r.nombreArticles} article(s) · Sous-total ${fcfa(r.sousTotal)}<br>` +
+    (r.erreurRemise ? `<small>Code promo valable dès 20 000 F</small><br>` : r.remise ? `Remise −${fcfa(r.remise)}<br>` : "") +
+    `Livraison ${r.livraison ? fcfa(r.livraison) : "offerte 🎉"}` +
+    (r.manquePourLivraisonGratuite ? ` · <small>plus que ${fcfa(r.manquePourLivraisonGratuite)} pour l'avoir offerte</small>` : "") +
+    `<br><b>Total ${fcfa(r.total)}</b> <small>dont TVA ${fcfa(r.dontTva)}</small>`;
+}
+$("#pa-promo").addEventListener("input", majPanier);
+majPanier();
+
+// ---------- Graphiques ----------
+const parDate = [...transactions].sort((a, b) => a.date.localeCompare(b.date));
+let cumul = 85000;
+const soldes = parDate.map((t) => (cumul += t.montant));
+$("#g-spark").innerHTML = `Évolution du solde : ${B.sparkline(soldes, { largeur: 160, hauteur: 36, couleur: "var(--accent)" })}`;
+const depenses = Object.entries(B.totauxParCategorie(transactions))
+  .filter(([, t]) => t.debits < 0)
+  .map(([libelle, t]) => ({ libelle, valeur: -t.debits }))
+  .sort((a, b) => b.valeur - a.valeur);
+$("#g-barres").innerHTML = B.barres(depenses, { couleur: "var(--accent)", formater: fcfa, largeur: 340 });
+
+// ---------- Compression d'image ----------
+const taille = (o) => (o > 1048576 ? `${(o / 1048576).toFixed(1)} Mo` : `${Math.round(o / 1024)} Ko`);
+$("#ci-fichier").addEventListener("change", async (e) => {
+  const fichier = e.target.files[0];
+  if (!fichier) return;
+  $("#ci-sortie").textContent = "Compression…";
+  try {
+    const debut = performance.now();
+    const compressee = await B.compresserImage(fichier, { largeurMax: 1280, qualite: 0.75 });
+    const gain = Math.round((1 - compressee.size / fichier.size) * 100);
+    $("#ci-sortie").innerHTML = `${taille(fichier.size)} → <b>${taille(compressee.size)}</b> ${gain > 0 ? badge(true, `−${gain} %`, "") : ""} en ${Math.round(performance.now() - debut)} ms`;
+    $("#ci-apercu").src = URL.createObjectURL(compressee);
+    $("#ci-apercu").hidden = false;
+  } catch {
+    $("#ci-sortie").innerHTML = badge(false, "", "Image illisible");
+  }
+});
+
+// ---------- Recherche floue ----------
+const villesCI = ["Abidjan", "Bouaké", "Yamoussoukro", "San-Pédro", "Korhogo", "Daloa", "Man", "Gagnoa", "Divo", "Abengourou", "Grand-Bassam", "Odienné"];
+function majFloue() {
+  const r = B.suggestions($("#rf-saisie").value, villesCI, { max: 3, similariteMin: 0.5 });
+  $("#rf-sortie").innerHTML = r.length
+    ? "Vouliez-vous dire : " + r.map((x) => `<b>${x.element}</b> <small>(${Math.round(x.score * 100)} %)</small>`).join(", ")
+    : "Aucune suggestion";
+}
+$("#rf-saisie").addEventListener("input", majFloue);
+majFloue();
+
+// ---------- Compte à rebours ----------
+$("#cr-bouton").onclick = () => {
+  const b = $("#cr-bouton");
+  b.disabled = true;
+  B.toast("Code envoyé (démo)", { type: "succes" });
+  B.compteARebours(15_000, {
+    surTic: (ms) => (b.textContent = `Renvoyer le code dans ${B.formaterDuree(ms)}`),
+    surFin: () => { b.disabled = false; b.textContent = "Renvoyer le code"; },
+  });
+};
+
+// ---------- Jours ouvrés ----------
+function majJoursOuvres() {
+  const date = $("#jo-date").value;
+  const delai = Number($("#jo-delai").value) || 0;
+  if (!date) return;
+  const annee = Number(date.slice(0, 4));
+  const arrivee = B.ajouterJoursOuvres(date, delai);
+  const feries = B.joursFeries(annee).map((j) => B.formaterDate(`${j}T12:00`, { day: "numeric", month: "short" }));
+  $("#jo-sortie").innerHTML = `Arrivée prévue : <b>${B.formaterDate(`${arrivee}T12:00`, { weekday: "long", day: "numeric", month: "long" })}</b><br><small>Fériés ${annee} : ${feries.join(", ")}</small>`;
+}
+["#jo-date", "#jo-delai"].forEach((s) => $(s).addEventListener("input", majJoursOuvres));
+majJoursOuvres();
 </script>
 </body>
 </html>
