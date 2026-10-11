@@ -1,0 +1,21 @@
+{
+  "name": "biblio-code",
+  "version": "0.2.0",
+  "description": "Bibliothèque de fonctionnalités réutilisables : web, appli web, banque, Android, Godot, Unity.",
+  "type": "module",
+  "exports": {
+    ".": "./web/index.js",
+    "./*": "./web/*"
+  },
+  "files": [
+    "web"
+  ],
+  "scripts": {
+    "test": "node --test",
+    "generer": "python3 outils/biblio.py generer"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "MIT"
+}

@@ -65,9 +65,37 @@ def echapper(ligne: str) -> str:
     return ligne.replace("\\", "\\\\").replace("$", "\\$")
 
 
+def generer_index_web(liste):
+    """web/index.js : réexporte tous les modules JS pour `import { ... } from "biblio-code"`."""
+    lignes = ["// Fichier généré par outils/biblio.py — ne pas modifier à la main.\n"]
+    for dossier, entete, code in liste:
+        if entete["langage"] == "javascript" and dossier.parts[len(RACINE.parts)] == "web":
+            lignes.append(f'export * from "./{code.relative_to(RACINE / "web").as_posix()}";\n')
+    (RACINE / "web" / "index.js").write_text("".join(lignes), encoding="utf-8")
+
+
+def generer_catalogue(liste):
+    """Remplace le tableau entre les marqueurs du README principal."""
+    readme = RACINE / "README.md"
+    debut, fin = "<!-- catalogue -->", "<!-- /catalogue -->"
+    texte = readme.read_text(encoding="utf-8")
+    if debut not in texte or fin not in texte:
+        return
+    lignes = ["| Module | Préfixe VS Code | Description |", "|---|---|---|"]
+    for dossier, entete, _ in liste:
+        chemin = dossier.relative_to(RACINE).as_posix()
+        lignes.append(f"| [{chemin}]({chemin}) | `{entete['prefixe']}` | {entete['description']} |")
+    avant = texte.split(debut)[0]
+    apres = texte.split(fin)[1]
+    readme.write_text(f"{avant}{debut}\n" + "\n".join(lignes) + f"\n{fin}{apres}", encoding="utf-8")
+
+
 def generer() -> int:
+    liste = list(trouver_snippets())
+    generer_index_web(liste)
+    generer_catalogue(liste)
     snippets = {}
-    for dossier, entete, code in trouver_snippets():
+    for dossier, entete, code in liste:
         portee = LANGAGES.get(entete["langage"], (None, entete["langage"]))[1]
         nom = str(dossier.relative_to(RACINE))
         snippets[nom] = {
