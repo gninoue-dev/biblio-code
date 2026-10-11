@@ -15,3 +15,11 @@ defilementInfini(document.querySelector("#fin-liste"), async () => {
   return suivante !== null; // false = plus rien à charger
 });
 ```
+
+## Liste dans une boîte qui défile
+
+Si la liste a sa propre barre de défilement (`overflow: auto`), indique ce conteneur, sinon rien ne se chargera :
+
+```js
+defilementInfini(sentinelle, chargerSuite, { racine: document.querySelector("#liste") });
+```

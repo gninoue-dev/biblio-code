@@ -1,0 +1,642 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>biblio-code · Démo</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📚</text></svg>">
+<meta name="description" content="Démo interactive de biblio-code : fonctionnalités web, appli web et banque réutilisables.">
+<style>
+  :root {
+    --fond: #f6f7f9; --carte: #ffffff; --texte: #15171a; --doux: #5d6470; --bord: #e2e5ea;
+    --accent: #1d4ed8; --accent-doux: #e8efff; --ok: #15803d; --ok-fond: #e7f6ec; --ko: #b91c1c; --ko-fond: #fdecec;
+    --code: #f0f2f5;
+  }
+  :root[data-theme="dark"] {
+    --fond: #0f1115; --carte: #181b21; --texte: #e8eaee; --doux: #9aa2ae; --bord: #2a2f38;
+    --accent: #7aa2ff; --accent-doux: #1c2640; --ok: #4ade80; --ok-fond: #12301e; --ko: #f87171; --ko-fond: #3a1717;
+    --code: #11141a;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--fond); color: var(--texte); font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  header { padding: 32px 16px 16px; max-width: 1180px; margin: 0 auto; }
+  h1 { margin: 0 0 4px; font-size: 28px; }
+  header p { margin: 0; color: var(--doux); }
+  .barre { position: sticky; top: 0; z-index: 10; background: color-mix(in srgb, var(--fond) 88%, transparent); backdrop-filter: blur(8px); border-bottom: 1px solid var(--bord); }
+  .barre div { max-width: 1180px; margin: 0 auto; padding: 8px 16px; display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+  .barre .espace { flex: 1; }
+  main { max-width: 1180px; margin: 0 auto; padding: 0 16px 64px; }
+  section { scroll-margin-top: 64px; }
+  h2 { font-size: 20px; margin: 36px 0 12px; }
+  .grille { display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 16px; }
+  .large { grid-column: 1 / -1; }
+  .carte { background: var(--carte); border: 1px solid var(--bord); border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+  .carte h3 { margin: 0; font-size: 16px; }
+  .carte .sous { margin: -6px 0 0; color: var(--doux); font-size: 13px; }
+  label { font-size: 13px; color: var(--doux); display: flex; flex-direction: column; gap: 4px; }
+  input, select, button { font: inherit; color: inherit; }
+  input, select { background: var(--fond); border: 1px solid var(--bord); border-radius: 8px; padding: 8px 10px; width: 100%; min-width: 0; }
+  input:focus, select:focus, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  button { background: var(--accent); color: #fff; border: 0; border-radius: 8px; padding: 8px 12px; cursor: pointer; }
+  :root[data-theme="dark"] button { color: #0f1115; }
+  button.second { background: var(--accent-doux); color: var(--accent); }
+  .ligne { display: flex; gap: 8px; flex-wrap: wrap; align-items: end; }
+  .ligne > * { flex: 1 1 120px; }
+  .ligne > button { flex: 0 0 auto; }
+  .resultat { background: var(--fond); border-radius: 8px; padding: 10px; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+  .resultat b { font-size: 18px; }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 99px; font-size: 13px; font-weight: 600; }
+  .badge.ok { background: var(--ok-fond); color: var(--ok); }
+  .badge.ko { background: var(--ko-fond); color: var(--ko); }
+  pre { margin: 0; background: var(--code); border-radius: 8px; padding: 8px 10px; font-size: 12.5px; overflow-x: auto; }
+  code { font-family: ui-monospace, "Cascadia Code", Menlo, monospace; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; font-variant-numeric: tabular-nums; }
+  th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--bord); }
+  td.num, th.num { text-align: right; white-space: nowrap; }
+  tr.mois td { background: var(--fond); font-weight: 600; }
+  .debit { color: var(--ko); } .credit { color: var(--ok); }
+  .defile { overflow-x: auto; }
+  .jauge { height: 8px; background: var(--fond); border-radius: 99px; overflow: hidden; }
+  .jauge div { height: 100%; width: 0; transition: width .2s, background .2s; }
+  .erreur { color: var(--ko); font-size: 12.5px; min-height: 1em; }
+  .otp { display: flex; gap: 6px; }
+  .otp input { width: 44px; height: 52px; text-align: center; font-size: 22px; padding: 0; }
+  .pages { display: flex; gap: 4px; flex-wrap: wrap; }
+  .pages button { min-width: 36px; padding: 6px 8px; }
+  .pages button[aria-current] { outline: 2px solid var(--accent); }
+  #zone { border: 2px dashed var(--bord); border-radius: 10px; padding: 24px; text-align: center; color: var(--doux); cursor: pointer; }
+  #zone.survol { border-color: var(--accent); background: var(--accent-doux); }
+  #apercus { display: flex; gap: 8px; flex-wrap: wrap; }
+  #apercus img { width: 72px; height: 72px; object-fit: cover; border-radius: 8px; }
+  #liste-infinie { height: 200px; overflow-y: auto; border: 1px solid var(--bord); border-radius: 8px; padding: 0 10px; }
+  #liste-infinie div { padding: 6px 0; border-bottom: 1px solid var(--bord); }
+  nav.routes { display: flex; gap: 8px; flex-wrap: wrap; }
+  nav.routes a { color: var(--accent); }
+  dialog { border: 1px solid var(--bord); border-radius: 12px; background: var(--carte); color: var(--texte); max-width: min(420px, 92vw); }
+  dialog::backdrop { background: rgb(0 0 0 / .45); }
+  footer { text-align: center; color: var(--doux); padding: 24px 16px 48px; }
+  a { color: var(--accent); }
+  @media (max-width: 400px) { .grille { grid-template-columns: 1fr; } .otp input { width: 38px; height: 46px; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>biblio-code</h1>
+  <p>Démo en direct des modules de la bibliothèque. Tout ce que tu vois tourne avec le vrai code de <a href="https://github.com/gninoue-dev/biblio-code">github.com/gninoue-dev/biblio-code</a>.</p>
+</header>
+
+<div class="barre"><div>
+  <button class="second" data-aller="banque">Banque</button>
+  <button class="second" data-aller="formulaires">Formulaires</button>
+  <button class="second" data-aller="app">Appli web</button>
+  <button class="second" data-aller="utilitaires">Utilitaires</button>
+  <span class="espace"></span>
+  <button id="theme" class="second" aria-label="Changer de thème">🌓 Thème</button>
+</div></div>
+
+<main>
+<!-- ======================= BANQUE ======================= -->
+<section id="banque">
+  <h2>Banque</h2>
+  <div class="grille">
+
+    <div class="carte">
+      <h3>Montant &amp; devises</h3>
+      <p class="sous">argent.js · devises.js</p>
+      <div class="ligne">
+        <label>Saisie<input id="m-saisie" value="1 234,56"></label>
+        <label>Devise<select id="m-devise"><option>EUR</option><option>XOF</option><option>USD</option></select></label>
+      </div>
+      <label>Partager en<input id="m-parts" type="number" min="1" max="20" value="3"></label>
+      <div class="resultat" id="m-sortie"></div>
+      <pre><code>formaterMontant(versUnitesMineures("1 234,56"), "EUR")</code></pre>
+    </div>
+
+    <div class="carte">
+      <h3>IBAN</h3>
+      <p class="sous">iban.js · masquage.js · presse-papier.js</p>
+      <label>IBAN<input id="i-saisie" value="CI98 CI00 8011 1123 4567 8901 2345" spellcheck="false"></label>
+      <div class="ligne">
+        <button class="second" data-iban="FR7630006000011234567890189">Exemple FR valide</button>
+        <button class="second" data-iban="FR7630006000011234567890188">Faute de frappe</button>
+      </div>
+      <div class="resultat" id="i-sortie"></div>
+      <button id="i-copier" class="second">Copier l'IBAN</button>
+      <pre><code>validerIban(iban) · formaterIban(iban) · masquer(iban)</code></pre>
+    </div>
+
+    <div class="carte">
+      <h3>Carte bancaire</h3>
+      <p class="sous">carte-bancaire.js · aide à la saisie uniquement</p>
+      <label>Numéro<input id="c-numero" inputmode="numeric" autocomplete="off" value="4111111111111111"></label>
+      <div class="ligne">
+        <label>Expiration<input id="c-exp" placeholder="MM/AA" value="08/28"></label>
+        <label>CVC<input id="c-cvc" inputmode="numeric" value="123"></label>
+      </div>
+      <div class="resultat" id="c-sortie"></div>
+      <pre><code>validerLuhn(n) · detecterReseau(n) · formaterNumeroCarte(n)</code></pre>
+    </div>
+
+    <div class="carte">
+      <h3>Simulateur de prêt</h3>
+      <p class="sous">pret.js</p>
+      <div class="ligne">
+        <label>Capital (€)<input id="p-capital" value="100 000"></label>
+        <label>Taux %<input id="p-taux" type="number" step="0.05" value="3.5"></label>
+        <label>Années<input id="p-annees" type="number" min="1" max="40" value="20"></label>
+      </div>
+      <div class="resultat" id="p-sortie"></div>
+      <div class="defile"><table id="p-tableau"></table></div>
+      <pre><code>mensualite(capital, 3.5, 240) · tableauAmortissement(...)</code></pre>
+    </div>
+
+    <div class="carte large">
+      <h3>Relevé de transactions</h3>
+      <p class="sous">transactions.js · argent.js · telechargement.js. Montants en francs CFA.</p>
+      <div class="ligne">
+        <label>Recherche<input id="t-recherche" placeholder="ex. loyer"></label>
+        <label>Type<select id="t-type"><option value="">Tous</option><option value="debit">Débits</option><option value="credit">Crédits</option></select></label>
+        <label>Catégorie<select id="t-categorie"><option value="">Toutes</option></select></label>
+        <button id="t-export">Exporter en CSV</button>
+      </div>
+      <div class="resultat" id="t-resume"></div>
+      <div class="defile"><table id="t-tableau"></table></div>
+      <pre><code>regrouperParMois(filtrerTransactions(liste, { type: "debit", recherche })) · exporterCsv(liste)</code></pre>
+    </div>
+
+    <div class="carte">
+      <h3>Déconnexion après inactivité</h3>
+      <p class="sous">inactivite.js · modale.js. Version courte : 15 s</p>
+      <div class="ligne">
+        <button id="s-demarrer">Démarrer la session</button>
+        <button id="s-arreter" class="second">Arrêter</button>
+      </div>
+      <div class="resultat" id="s-sortie">Session inactive.</div>
+      <pre><code>surveillerInactivite({ dureeMs, surAvertissement, surExpiration })</code></pre>
+    </div>
+
+  </div>
+</section>
+
+<!-- ======================= FORMULAIRES ======================= -->
+<section id="formulaires">
+  <h2>Formulaires</h2>
+  <div class="grille">
+
+    <form class="carte" id="f-form" novalidate>
+      <h3>Inscription</h3>
+      <p class="sous">validation.js · mot-de-passe.js</p>
+      <label>Email<input name="email" type="email" autocomplete="off"></label>
+      <div class="erreur" data-erreur="email"></div>
+      <label>Téléphone (Côte d'Ivoire)<input name="telephone" placeholder="07 07 12 34 56" autocomplete="off"></label>
+      <div class="erreur" data-erreur="telephone"></div>
+      <label>Mot de passe<input name="motDePasse" type="password" autocomplete="new-password"></label>
+      <div class="jauge"><div id="f-jauge"></div></div>
+      <div class="sous" id="f-niveau">Force : —</div>
+      <div class="erreur" data-erreur="motDePasse"></div>
+      <label>Confirmation<input name="confirmation" type="password" autocomplete="new-password"></label>
+      <div class="erreur" data-erreur="confirmation"></div>
+      <button>Valider</button>
+      <pre><code>validerFormulaire(donnees, { email: [[valider.email, "Email invalide"]] })</code></pre>
+    </form>
+
+    <div class="carte">
+      <h3>Code de vérification (SMS / 2FA)</h3>
+      <p class="sous">champ-otp.js. Le bon code est 123456. Essaie de coller un code.</p>
+      <div class="otp" id="otp"><input><input><input><input><input><input></div>
+      <button id="otp-vider" class="second">Effacer</button>
+      <pre><code>champOtp(conteneur, { surComplet: (code) => verifier(code) })</code></pre>
+    </div>
+
+  </div>
+</section>
+
+<!-- ======================= APPLI WEB ======================= -->
+<section id="app">
+  <h2>Appli web</h2>
+  <div class="grille">
+
+    <div class="carte">
+      <h3>Notifications &amp; confirmation</h3>
+      <p class="sous">toasts.js · modale.js</p>
+      <div class="ligne">
+        <button data-toast="succes">Succès</button>
+        <button data-toast="erreur">Erreur</button>
+        <button data-toast="alerte">Alerte</button>
+        <button data-toast="info">Info</button>
+      </div>
+      <button id="a-confirmer" class="second">Supprimer un bénéficiaire…</button>
+      <pre><code>toast("Virement envoyé", { type: "succes" })
+if (await confirmer("Supprimer ?")) …</code></pre>
+    </div>
+
+    <div class="carte">
+      <h3>Panier (état global)</h3>
+      <p class="sous">store.js. Deux affichages abonnés au même état</p>
+      <div class="ligne">
+        <button data-produit="Pagne wax">+ Pagne wax</button>
+        <button data-produit="Attiéké">+ Attiéké</button>
+        <button id="panier-vider" class="second">Vider</button>
+      </div>
+      <div class="resultat">Articles : <b id="panier-nombre">0</b></div>
+      <div class="resultat" id="panier-liste">Panier vide</div>
+      <pre><code>store.abonner(afficher) · store.modifier(e => ({ ...e, panier: [...] }))</code></pre>
+    </div>
+
+    <div class="carte">
+      <h3>Traductions</h3>
+      <p class="sous">i18n.js</p>
+      <label>Langue<select id="l-langue"><option value="fr">Français</option><option value="en">English</option><option value="es">Español</option></select></label>
+      <div class="resultat" id="l-sortie"></div>
+      <pre><code>i18n.t("bonjour", { nom: "Awa" })</code></pre>
+    </div>
+
+    <div class="carte">
+      <h3>Routeur</h3>
+      <p class="sous">routeur.js. Regarde l'adresse de la page</p>
+      <nav class="routes"><a href="#/">Accueil</a><a href="#/comptes">Comptes</a><a href="#/comptes/42">Compte 42</a><a href="#/nimporte">Lien cassé</a></nav>
+      <div class="resultat" id="r-sortie"></div>
+      <pre><code>creerRouteur({ "/comptes/:id": ({ id }) => … })</code></pre>
+    </div>
+
+    <div class="carte large">
+      <h3>Tableau de données</h3>
+      <p class="sous">tableau-donnees.js · pagination.js. Recherche sans accents (« kone » trouve « Koné »)</p>
+      <div class="ligne">
+        <label>Recherche<input id="d-recherche" placeholder="nom ou ville"></label>
+        <label>Trier par<select id="d-tri"><option value="nom">Nom</option><option value="ville">Ville</option><option value="solde">Solde</option></select></label>
+        <label>Sens<select id="d-sens"><option value="asc">Croissant</option><option value="desc">Décroissant</option></select></label>
+      </div>
+      <div class="defile"><table id="d-tableau"></table></div>
+      <div class="pages" id="d-pages"></div>
+      <pre><code>paginer(trierPar(rechercher(clients, q, ["nom", "ville"]), champ, sens), page, 8)</code></pre>
+    </div>
+
+    <div class="carte">
+      <h3>Envoi de fichiers</h3>
+      <p class="sous">upload-fichiers.js. Images uniquement, 5 Mo max</p>
+      <div id="zone">Glisse des images ici<br>ou clique pour choisir</div>
+      <div id="apercus"></div>
+      <pre><code>zoneDepot(zone, { accepter: ["image/*"], tailleMaxMo: 5, surFichiers })</code></pre>
+    </div>
+
+    <div class="carte">
+      <h3>Défilement infini</h3>
+      <p class="sous">defilement-infini.js. 60 éléments chargés par lots de 15</p>
+      <div id="liste-infinie"><div id="sentinelle">Chargement…</div></div>
+      <pre><code>defilementInfini(sentinelle, charger, { racine: boite })</code></pre>
+    </div>
+
+  </div>
+</section>
+
+<!-- ======================= UTILITAIRES ======================= -->
+<section id="utilitaires">
+  <h2>Utilitaires</h2>
+  <div class="grille">
+
+    <div class="carte">
+      <h3>Debounce vs throttle</h3>
+      <p class="sous">debounce.js · throttle.js. Tape vite dans le champ</p>
+      <input id="u-frappe" placeholder="Tape ici…">
+      <div class="resultat">Frappes : <b id="u-n1">0</b> · throttle (300 ms) : <b id="u-n2">0</b> · debounce (400 ms) : <b id="u-n3">0</b></div>
+      <pre><code>input.oninput = debounce(rechercher, 400)</code></pre>
+    </div>
+
+    <div class="carte">
+      <h3>Texte</h3>
+      <p class="sous">texte.js</p>
+      <input id="u-texte" value="Été à Abidjan : les <b>meilleurs</b> maquis !">
+      <div class="resultat" id="u-texte-sortie"></div>
+      <pre><code>slugifier(t) · tronquer(t, 20) · echapperHtml(t)</code></pre>
+    </div>
+
+    <div class="carte">
+      <h3>Dates</h3>
+      <p class="sous">dates.js</p>
+      <div class="resultat" id="u-dates"></div>
+      <pre><code>dateRelative(date) · formaterDate(date)</code></pre>
+    </div>
+
+  </div>
+</section>
+</main>
+
+<footer>biblio-code · licence MIT · <a href="https://github.com/gninoue-dev/biblio-code">code source</a></footer>
+
+<script type="module">
+import * as B from "../web/index.js";
+
+const $ = (s) => document.querySelector(s);
+const badge = (ok, oui, non) => `<span class="badge ${ok ? "ok" : "ko"}">${ok ? oui : non}</span>`;
+
+// ---------- Thème & navigation ----------
+B.initTheme();
+$("#theme").onclick = () => B.toast(`Thème ${B.basculerTheme() === "dark" ? "sombre" : "clair"}`);
+document.querySelectorAll("[data-aller]").forEach((b) => (b.onclick = () => document.getElementById(b.dataset.aller).scrollIntoView({ behavior: "smooth" })));
+
+// ---------- Montant ----------
+function majMontant() {
+  const devise = $("#m-devise").value;
+  try {
+    const u = B.versUnitesMineures($("#m-saisie").value, devise);
+    const parts = Math.max(1, Math.min(20, Number($("#m-parts").value) || 1));
+    let html = `<b>${B.formaterMontant(u, devise)}</b><br>Stocké en base : <code>${u}</code> (unités mineures)`;
+    if (devise === "EUR") html += `<br>En francs CFA : ${B.formaterMontant(B.convertir(u, "EUR", "XOF", B.PARITE_FCFA), "XOF")}`;
+    if (devise === "XOF") html += `<br>En euros : ${B.formaterMontant(B.convertir(u, "XOF", "EUR", B.PARITE_FCFA), "EUR")}`;
+    html += `<br>Partagé en ${parts} : ${B.repartir(u, parts).map((p) => B.formaterMontant(p, devise)).join(" + ")}`;
+    $("#m-sortie").innerHTML = html;
+  } catch (e) {
+    $("#m-sortie").innerHTML = badge(false, "", "Saisie invalide") + " " + B.echapperHtml(e.message);
+  }
+}
+["#m-saisie", "#m-devise", "#m-parts"].forEach((s) => $(s).addEventListener("input", majMontant));
+majMontant();
+
+// ---------- IBAN ----------
+function majIban() {
+  const v = $("#i-saisie").value;
+  const ok = B.validerIban(v);
+  $("#i-sortie").innerHTML = `${badge(ok, "IBAN valide", "IBAN invalide")}<br>Formaté : <code>${B.echapperHtml(B.formaterIban(v))}</code><br>Masqué : <code>${B.echapperHtml(B.masquer(B.formaterIban(v)))}</code>`;
+}
+$("#i-saisie").addEventListener("input", majIban);
+document.querySelectorAll("[data-iban]").forEach((b) => (b.onclick = () => { $("#i-saisie").value = B.formaterIban(b.dataset.iban); majIban(); }));
+$("#i-copier").onclick = async () => B.toast((await B.copierTexte(B.normaliserIban($("#i-saisie").value))) ? "IBAN copié" : "Copie impossible", { type: "succes" });
+majIban();
+
+// ---------- Carte ----------
+function majCarte() {
+  const champ = $("#c-numero");
+  champ.value = B.formaterNumeroCarte(champ.value);
+  const reseau = B.detecterReseau(champ.value);
+  $("#c-sortie").innerHTML = [
+    `Réseau : <b>${reseau ?? "inconnu"}</b>`,
+    `Numéro : ${badge(B.validerLuhn(champ.value), "valide (Luhn)", "invalide")}`,
+    `Expiration : ${badge(B.validerExpiration($("#c-exp").value), "OK", "expirée / invalide")}`,
+    `CVC : ${badge(B.validerCvc($("#c-cvc").value, reseau), "OK", reseau === "amex" ? "4 chiffres" : "3 chiffres")}`,
+    `Affichage : <code>${B.masquer(champ.value)}</code>`,
+  ].join("<br>");
+}
+["#c-numero", "#c-exp", "#c-cvc"].forEach((s) => $(s).addEventListener("input", majCarte));
+majCarte();
+
+// ---------- Prêt ----------
+function majPret() {
+  try {
+    const capital = B.versUnitesMineures($("#p-capital").value, "EUR");
+    const taux = Number($("#p-taux").value);
+    const mois = Math.round(Number($("#p-annees").value) * 12);
+    if (!(capital > 0 && mois > 0 && taux >= 0)) throw new Error("Valeurs incomplètes");
+    const lignes = B.tableauAmortissement(capital, taux, mois);
+    const cout = lignes.reduce((s, l) => s + l.interets, 0);
+    $("#p-sortie").innerHTML = `Mensualité : <b>${B.formaterMontant(B.mensualite(capital, taux, mois))}</b><br>Coût des intérêts : ${B.formaterMontant(cout)}<br>Total remboursé : ${B.formaterMontant(capital + cout)}`;
+    const montrer = [...lignes.slice(0, 3), lignes.at(-1)];
+    $("#p-tableau").innerHTML = `<tr><th>Mois</th><th class="num">Intérêts</th><th class="num">Capital</th><th class="num">Restant</th></tr>` +
+      montrer.map((l, i) => (i === 3 && mois > 4 ? `<tr><td colspan="4">…</td></tr>` : "") +
+        `<tr><td>${l.mois}</td><td class="num">${B.formaterMontant(l.interets)}</td><td class="num">${B.formaterMontant(l.principal)}</td><td class="num">${B.formaterMontant(l.restant)}</td></tr>`).join("");
+  } catch (e) {
+    $("#p-sortie").innerHTML = badge(false, "", "Saisie invalide");
+    $("#p-tableau").innerHTML = "";
+  }
+}
+["#p-capital", "#p-taux", "#p-annees"].forEach((s) => $(s).addEventListener("input", majPret));
+majPret();
+
+// ---------- Transactions ----------
+const transactions = [
+  { date: "2026-10-10", libelle: "Transfert mobile money", montant: -25000, categorie: "transferts" },
+  { date: "2026-10-08", libelle: "Supermarché", montant: -38500, categorie: "courses" },
+  { date: "2026-10-06", libelle: "Restaurant maquis", montant: -12000, categorie: "sorties" },
+  { date: "2026-10-05", libelle: "Facture électricité", montant: -21750, categorie: "logement" },
+  { date: "2026-10-02", libelle: "Loyer octobre", montant: -150000, categorie: "logement" },
+  { date: "2026-10-01", libelle: "Salaire", montant: 450000, categorie: "revenus" },
+  { date: "2026-09-27", libelle: "Carburant", montant: -30000, categorie: "transport" },
+  { date: "2026-09-21", libelle: "Abonnement internet", montant: -19900, categorie: "logement" },
+  { date: "2026-09-15", libelle: "Remboursement ami", montant: 20000, categorie: "transferts" },
+  { date: "2026-09-12", libelle: "Supermarché", montant: -41200, categorie: "courses" },
+  { date: "2026-09-02", libelle: "Loyer septembre", montant: -150000, categorie: "logement" },
+  { date: "2026-09-01", libelle: "Salaire", montant: 450000, categorie: "revenus" },
+];
+for (const c of Object.keys(B.totauxParCategorie(transactions)).sort()) $("#t-categorie").append(new Option(c, c));
+
+const filtreActuel = () => B.filtrerTransactions(transactions, {
+  recherche: $("#t-recherche").value, type: $("#t-type").value || undefined, categorie: $("#t-categorie").value || undefined,
+});
+const fcfa = (u) => B.formaterMontant(u, "XOF");
+
+function majTransactions() {
+  const liste = filtreActuel();
+  const debits = liste.filter((t) => t.montant < 0).reduce((s, t) => s + t.montant, 0);
+  const credits = liste.filter((t) => t.montant > 0).reduce((s, t) => s + t.montant, 0);
+  $("#t-resume").innerHTML = `${liste.length} opération(s) · Entrées <span class="credit">${fcfa(credits)}</span> · Sorties <span class="debit">${fcfa(debits)}</span> · Solde du compte <b>${fcfa(B.soldeTransactions(transactions, 85000))}</b>`;
+  let html = `<tr><th>Date</th><th>Libellé</th><th>Catégorie</th><th class="num">Montant</th></tr>`;
+  for (const [mois, lignes] of B.regrouperParMois(liste)) {
+    const nomMois = B.capitaliser(B.formaterDate(`${mois}-15`, { month: "long", year: "numeric" }));
+    html += `<tr class="mois"><td colspan="3">${nomMois}</td><td class="num">${fcfa(B.soldeTransactions(lignes))}</td></tr>`;
+    for (const t of lignes) {
+      html += `<tr><td>${B.formaterDate(t.date, { day: "2-digit", month: "short" })}</td><td>${B.echapperHtml(t.libelle)}</td><td>${t.categorie}</td><td class="num ${t.montant < 0 ? "debit" : "credit"}">${B.formaterMontant(t.montant, "XOF", { signe: "always" })}</td></tr>`;
+    }
+  }
+  $("#t-tableau").innerHTML = html;
+}
+$("#t-recherche").addEventListener("input", B.debounce(majTransactions, 200));
+["#t-type", "#t-categorie"].forEach((s) => $(s).addEventListener("input", majTransactions));
+$("#t-export").onclick = () => {
+  B.telechargerFichier(B.exporterCsv(filtreActuel(), { decimales: 0 }), "releve.csv", "text/csv;charset=utf-8");
+  B.toast("Relevé exporté", { type: "succes" });
+};
+majTransactions();
+
+// ---------- Inactivité ----------
+let session = null;
+let compteur = null;
+const debut = { t: Date.now() };
+["pointerdown", "keydown", "scroll", "touchstart"].forEach((e) => addEventListener(e, () => (debut.t = Date.now()), { passive: true }));
+$("#s-demarrer").onclick = () => {
+  session?.arreter();
+  clearInterval(compteur);
+  debut.t = Date.now();
+  session = B.surveillerInactivite({
+    dureeMs: 15000,
+    avertirAvantMs: 6000,
+    surAvertissement: async () => {
+      if (await B.confirmer("Sans activité, vous allez être déconnecté. Rester connecté ?", { titre: "Session bientôt expirée", ok: "Rester connecté", annuler: "Me déconnecter" })) {
+        session?.relancer();
+        debut.t = Date.now();
+      }
+    },
+    surExpiration: () => {
+      clearInterval(compteur);
+      document.querySelector("dialog[open]")?.close();
+      $("#s-sortie").innerHTML = badge(false, "", "Déconnecté") + " après 15 s sans activité.";
+      B.toast("Session expirée : déconnecté", { type: "erreur" });
+      session = null;
+    },
+  });
+  compteur = setInterval(() => {
+    const reste = Math.max(0, 15 - Math.floor((Date.now() - debut.t) / 1000));
+    $("#s-sortie").innerHTML = `${badge(true, "Connecté", "")} Déconnexion dans <b>${reste} s</b> sans clic ni touche.`;
+  }, 250);
+};
+$("#s-arreter").onclick = () => {
+  session?.arreter();
+  session = null;
+  clearInterval(compteur);
+  $("#s-sortie").textContent = "Session arrêtée.";
+};
+
+// ---------- Formulaire ----------
+const form = $("#f-form");
+form.motDePasse.addEventListener("input", () => {
+  const { score, niveau } = B.forceMotDePasse(form.motDePasse.value);
+  const couleurs = ["#b91c1c", "#b91c1c", "#d97706", "#ca8a04", "#16a34a", "#15803d"];
+  $("#f-jauge").style.width = `${form.motDePasse.value ? Math.max(score, 1) * 20 : 0}%`;
+  $("#f-jauge").style.background = couleurs[score];
+  $("#f-niveau").textContent = `Force : ${form.motDePasse.value ? niveau : "—"}`;
+});
+form.addEventListener("submit", (e) => {
+  e.preventDefault();
+  const d = Object.fromEntries(new FormData(form));
+  const { valide, erreurs } = B.validerFormulaire(d, {
+    email: [[B.valider.nonVide, "Email obligatoire"], [B.valider.email, "Email invalide"]],
+    telephone: [[B.valider.telephoneCI, "Numéro invalide (ex. 07 07 12 34 56)"]],
+    motDePasse: [[B.valider.longueurMin(12), "12 caractères minimum"], [(v) => B.forceMotDePasse(v).score >= 4, "Mot de passe trop faible"]],
+    confirmation: [[B.valider.identique(d.motDePasse), "Les mots de passe sont différents"]],
+  });
+  form.querySelectorAll("[data-erreur]").forEach((z) => (z.textContent = erreurs[z.dataset.erreur] ?? ""));
+  B.toast(valide ? "Inscription valide !" : "Corrige les champs en rouge", { type: valide ? "succes" : "erreur" });
+});
+
+// ---------- OTP ----------
+const otp = B.champOtp($("#otp"), {
+  surComplet: (code) => {
+    if (code === "123456") B.toast("Code correct", { type: "succes" });
+    else { B.toast("Code incorrect", { type: "erreur" }); otp.vider(); }
+  },
+});
+$("#otp-vider").onclick = () => otp.vider();
+
+// ---------- Toasts & confirmation ----------
+const messages = { succes: "Virement envoyé", erreur: "Solde insuffisant", alerte: "Connexion lente", info: "Nouveau message" };
+document.querySelectorAll("[data-toast]").forEach((b) => (b.onclick = () => B.toast(messages[b.dataset.toast], { type: b.dataset.toast })));
+$("#a-confirmer").onclick = async () => {
+  const ok = await B.confirmer("Supprimer le bénéficiaire « Awa Koné » ?", { titre: "Suppression", ok: "Supprimer" });
+  B.toast(ok ? "Bénéficiaire supprimé" : "Annulé", { type: ok ? "succes" : "info" });
+};
+
+// ---------- Store ----------
+const store = B.creerStore({ panier: [] });
+store.abonner((e) => ($("#panier-nombre").textContent = e.panier.length));
+store.abonner((e) => ($("#panier-liste").textContent = e.panier.length ? e.panier.join(", ") : "Panier vide"));
+document.querySelectorAll("[data-produit]").forEach((b) => (b.onclick = () => store.modifier((e) => ({ ...e, panier: [...e.panier, b.dataset.produit] }))));
+$("#panier-vider").onclick = () => store.modifier({ panier: [] });
+
+// ---------- i18n ----------
+const i18n = B.creerI18n({
+  fr: { bonjour: "Bonjour {nom} 👋", solde: "Votre solde est de {montant}", aide: "Besoin d'aide ?" },
+  en: { bonjour: "Hello {nom} 👋", solde: "Your balance is {montant}", aide: "Need help?" },
+  es: { bonjour: "Hola {nom} 👋", solde: "Su saldo es {montant}" },
+});
+function majLangue() {
+  i18n.changerLangue($("#l-langue").value);
+  const montant = B.formaterMontant(150000, "XOF", { langue: i18n.langue });
+  $("#l-sortie").innerHTML = [i18n.t("bonjour", { nom: "Awa" }), i18n.t("solde", { montant }), i18n.t("aide")].map(B.echapperHtml).join("<br>") +
+    (i18n.langue === "es" ? `<br><small>(« aide » manque en espagnol → repli sur le français)</small>` : "");
+}
+$("#l-langue").addEventListener("input", majLangue);
+majLangue();
+
+// ---------- Routeur ----------
+B.creerRouteur(
+  {
+    "/": () => ($("#r-sortie").innerHTML = "Route <code>/</code> → page d'accueil"),
+    "/comptes": () => ($("#r-sortie").innerHTML = "Route <code>/comptes</code> → liste des comptes"),
+    "/comptes/:id": ({ id }) => ($("#r-sortie").innerHTML = `Route <code>/comptes/:id</code> → compte n° <b>${B.echapperHtml(id)}</b>`),
+  },
+  { pasTrouve: (c) => ($("#r-sortie").innerHTML = `${badge(false, "", "404")} Aucune route pour <code>${B.echapperHtml(c)}</code>`) }
+);
+
+// ---------- Tableau de données ----------
+const prenoms = ["Awa", "Koffi", "Aminata", "Yao", "Fatou", "Moussa", "Adjoua", "Ibrahim", "Mariam", "Serge"];
+const noms = ["Koné", "Kouassi", "Traoré", "Bamba", "Diallo", "Yao", "Ouattara", "N'Guessan"];
+const villes = ["Abidjan", "Bouaké", "Yamoussoukro", "San-Pédro", "Korhogo", "Daloa"];
+const clients = Array.from({ length: 57 }, (_, i) => ({
+  nom: `${prenoms[i % prenoms.length]} ${noms[(i * 3) % noms.length]}`,
+  ville: villes[(i * 5) % villes.length],
+  solde: ((i * 7919) % 2000) * 1000 - 300000,
+}));
+let pageClients = 1;
+function majClients() {
+  const liste = B.trierPar(B.rechercher(clients, $("#d-recherche").value, ["nom", "ville"]), $("#d-tri").value, $("#d-sens").value);
+  const p = B.paginer(liste, pageClients, 8);
+  pageClients = p.page;
+  $("#d-tableau").innerHTML = `<tr><th>Client</th><th>Ville</th><th class="num">Solde</th></tr>` +
+    (p.elements.map((c) => `<tr><td>${B.echapperHtml(c.nom)}</td><td>${c.ville}</td><td class="num ${c.solde < 0 ? "debit" : ""}">${fcfa(c.solde)}</td></tr>`).join("") ||
+      `<tr><td colspan="3">Aucun résultat</td></tr>`);
+  const pages = $("#d-pages");
+  pages.replaceChildren(...B.numerosPages(p.page, p.totalPages).map((n) => {
+    const b = document.createElement("button");
+    b.className = "second";
+    b.textContent = n;
+    if (n === "…") b.disabled = true;
+    else b.onclick = () => { pageClients = n; majClients(); };
+    if (n === p.page) b.setAttribute("aria-current", "page");
+    return b;
+  }));
+}
+$("#d-recherche").addEventListener("input", B.debounce(() => { pageClients = 1; majClients(); }, 150));
+["#d-tri", "#d-sens"].forEach((s) => $(s).addEventListener("input", majClients));
+majClients();
+
+// ---------- Upload ----------
+B.zoneDepot($("#zone"), {
+  accepter: ["image/*"],
+  tailleMaxMo: 5,
+  surFichiers: (fichiers) => {
+    for (const f of fichiers) $("#apercus").append(Object.assign(document.createElement("img"), { src: B.apercuImage(f), alt: f.name }));
+    B.toast(`${fichiers.length} image(s) ajoutée(s)`, { type: "succes" });
+  },
+  surErreur: (msg) => B.toast(msg, { type: "erreur" }),
+});
+
+// ---------- Défilement infini ----------
+let charges = 0;
+B.defilementInfini($("#sentinelle"), async () => {
+  await new Promise((r) => setTimeout(r, 400)); // simule un appel réseau
+  for (let i = 0; i < 15; i++) {
+    charges++;
+    const ligne = document.createElement("div");
+    ligne.textContent = `Opération n° ${charges}`;
+    $("#sentinelle").before(ligne);
+  }
+  if (charges >= 60) $("#sentinelle").textContent = "Fin de la liste ✓";
+  return charges < 60;
+}, { racine: $("#liste-infinie"), marge: "50px" });
+
+// ---------- Utilitaires ----------
+let n1 = 0, n2 = 0, n3 = 0;
+const compterThrottle = B.throttle(() => ($("#u-n2").textContent = ++n2), 300);
+const compterDebounce = B.debounce(() => ($("#u-n3").textContent = ++n3), 400);
+$("#u-frappe").addEventListener("input", () => {
+  $("#u-n1").textContent = ++n1;
+  compterThrottle();
+  compterDebounce();
+});
+
+function majTexte() {
+  const t = $("#u-texte").value;
+  $("#u-texte-sortie").innerHTML = `Slug : <code>${B.echapperHtml(B.slugifier(t))}</code><br>Tronqué : ${B.echapperHtml(B.tronquer(t, 20))}<br>Échappé : <code>${B.echapperHtml(B.echapperHtml(t))}</code>`;
+}
+$("#u-texte").addEventListener("input", majTexte);
+majTexte();
+
+function majDates() {
+  const maintenant = Date.now();
+  const exemples = [["Il y a 45 s", -45e3], ["Il y a 3 h", -3 * 36e5], ["Hier", -864e5], ["Dans 2 semaines", 14 * 864e5]];
+  $("#u-dates").innerHTML = `Aujourd'hui : <b>${B.formaterDate(maintenant)}</b><br>` +
+    exemples.map(([, d]) => B.dateRelative(maintenant + d)).join(" · ");
+}
+majDates();
+</script>
+</body>
+</html>

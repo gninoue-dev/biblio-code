@@ -1,6 +1,7 @@
 // Charge la suite d'une liste quand l'élément « sentinelle » (en bas) devient visible.
 // `chargerSuite` renvoie false quand il n'y a plus rien à charger.
-export function defilementInfini(sentinelle, chargerSuite, { marge = "300px" } = {}) {
+// `racine` : le conteneur qui défile, si la liste est dans une boîte (null = la page entière).
+export function defilementInfini(sentinelle, chargerSuite, { marge = "300px", racine = null } = {}) {
   let enCours = false;
   const observateur = new IntersectionObserver(
     async ([entree]) => {
@@ -16,7 +17,7 @@ export function defilementInfini(sentinelle, chargerSuite, { marge = "300px" } =
         enCours = false;
       }
     },
-    { rootMargin: marge }
+    { root: racine, rootMargin: marge }
   );
   observateur.observe(sentinelle);
   return () => observateur.disconnect();

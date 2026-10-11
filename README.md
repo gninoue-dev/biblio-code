@@ -1,5 +1,7 @@
 # biblio-code
 
+**▶ [Démo en direct](https://gninoue-dev.github.io/biblio-code/demo/)** : essaie chaque module dans ton navigateur.
+
 Ma bibliothèque de **fonctionnalités réutilisables** : du code testé que j'importe dans mes projets au lieu de le réécrire à chaque fois.
 
 - **Web** : utilitaires, formulaires, fonctionnalités d'application web (API, routeur, état, notifications…)
@@ -25,7 +27,7 @@ import { validerIban, formaterMontant, toast, creerClientApi } from "biblio-code
 
 ```html
 <script type="module">
-  import { formaterMontant } from "https://cdn.jsdelivr.net/gh/gninoue-dev/biblio-code@v0.2.0/web/index.js";
+  import { formaterMontant } from "https://cdn.jsdelivr.net/gh/gninoue-dev/biblio-code@v0.3.0/web/index.js";
   document.body.textContent = formaterMontant(150000, "XOF"); // 150 000 F CFA
 </script>
 ```
@@ -93,6 +95,9 @@ Les modules `banque` stockent les montants en **unités mineures entières** : d
 Les contrôles faits dans le navigateur (IBAN, carte, masquage, inactivité) améliorent l'expérience de l'utilisateur, mais **ne remplacent pas** les vérifications côté serveur.
 
 ## Développement
+
+Pour voir la démo en local : `python3 -m http.server`, puis ouvre http://localhost:8000/demo/
+
 
 ```bash
 npm test                                                        # lance tous les tests
